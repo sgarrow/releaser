@@ -7,7 +7,7 @@ import sys
 import os
 import re
 
-VER = 'v0.0.1 - 07-Mar-2026'
+VER = 'v1.0.0 - 07-Mar-2026'
 #############################################################################
 
 def mapTo2D(  flatList, numCols ):
@@ -496,7 +496,7 @@ if __name__ == '__main__':
     print( '\n Updating app Ver and Date in {}'.format(projFileWithVerNumInIt) )
     fileToChangeVerNumIn = Path( projFileWithVerNumInIt )
     text = fileToChangeVerNumIn.read_text(encoding='utf-8')
-    new_text=re.sub(r"VER = 'v0.0.1 - 07-Mar-2026'
+    new_text=re.sub(r"VER = .*", f"VER = '{newVerStr} - {date}'",text,count=1) # pylint: disable=W1405
     fileToChangeVerNumIn.write_text(new_text, encoding='utf-8')
 
     if projFileWithVerNumInIt not in fLstDict['changedTrackedFs']['fLst']:
