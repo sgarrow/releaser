@@ -7,7 +7,7 @@ import sys
 import os
 import re
 
-VER = 'v1.0.0 - 07-Mar-2026'
+VER = 'v2.0.0 - 14-Mar-2026'
 #############################################################################
 
 def mapTo2D(  flatList, numCols ):
@@ -141,7 +141,7 @@ def runCommand( cmdLst ):
         return error, result.stdout.strip(), result.stderr.strip()
     except sp.CalledProcessError as e:
         error = True
-        return error, e.stderr.strip(),      e.stderr.strip()
+        return error, e.stdout.strip(),      e.stderr.strip()
 #############################################################################
 
 def runCommandTst():
@@ -402,6 +402,24 @@ if __name__ == '__main__':
          'active'    :False,
          'url'       :'https://github.com/sgarrow/sharedClientServerCode.git'
         },
+    'soduko':
+        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\soduko'),
+         'verNumFile':'soduko.py',
+         'active'    :False,
+         'url'       :'https://github.com/sgarrow/soduko.git'
+        },
+    'multiCore':
+        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\multicore'),
+         'verNumFile':'main.py',
+         'active'    :False,
+         'url'       :'https://github.com/sgarrow/multiCore.git'
+        },
+    'clientServer':
+        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\clientServer'),
+         'verNumFile':'server.py',
+         'active'    :False,
+         'url'       :'https://github.com/sgarrow/clientServer.git'
+        },
     'releaser':
         {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\releaser'),
          'verNumFile':'release.py',
@@ -467,6 +485,20 @@ if __name__ == '__main__':
         goOn = input( '   Continue (y/n)? -> ' )  # <-- EXIT ?
         if goOn != 'y':
             sys.exit()
+    #########################################
+
+    ### Look for diffs in shaed files if appropriate.
+    #print(keyLst[choiceInt])
+    #if keyLst[choiceInt] in ['spiClock', 'sprinkler2', 'shared']:
+    #    print('look for diffs')
+    #    dirsToCmpLst = [ 
+    #        projDict['shared']['dir'],
+    #        projDict['spiClock']['dir'],
+    #        projDict['sprinkler2']['dir']
+    #    ]
+    #    lookForDiffs( dirsToCmpLst, fLstDict['expectedUntrackedFs']['fLst'] )
+    #
+    #sys.exit()
     #########################################
 
     #### Get current version num, calculate new version num.
@@ -545,10 +577,6 @@ if __name__ == '__main__':
 
     print( '\n Release Successful. \n' )
 
-    #lookForDiffs( [ sharedDir, spiClockDir, sprinkler2Dir],
-    #                fLstDict['expectedUntrackedFs']['fLst'
-    #              ]
-    #)
 
     #runCommandTst()
     #tstMoveOrCopyFiles()
