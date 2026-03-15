@@ -7,7 +7,7 @@ import sys
 import os
 import re
 
-VER = 'v2.0.0 - 14-Mar-2026'
+VER = 'v3.0.0 - 14-Mar-2026'
 #############################################################################
 
 def mapTo2D(  flatList, numCols ):
@@ -331,7 +331,9 @@ def printStdOutOrStdErr( hasError, stdOut, stdErr ):
 
 def lookForDiffs( dirsToComp, fLstStr ):
     print( '\n Looking for diffs among shared files.\n' )
+    print( fLstStr )
 
+    differencesExist = False
     fLstPath = [ Path(x) for x in fLstStr ]
     combSet  = combinations(dirsToComp, 2)
     width    = 37
@@ -367,10 +369,12 @@ def lookForDiffs( dirsToComp, fLstStr ):
                 print( '==',end = '' )
             else:
                 print( '!=', end = '' )
+                differencesExist = True
             print(pStr1, end ='')
 
             print()
         print('  ##########')
+    return differencesExist
 #############################################################################
 
 if __name__ == '__main__':
@@ -474,31 +478,35 @@ if __name__ == '__main__':
         print( '\n unexpected/untracked files present.')
         print( '   Continuing will not add them.')
         print( '   Add from cmd line like this <git add fName>')
-        goOn = input( '   Continue (y/n)? -> ' )  # <-- EXIT ?
+        goOn = input( '   Continue (y/n)? -> ' )      # <-- EXIT ?
         if goOn != 'y':
             sys.exit()
 
     if fLstDict['changedTrackedFs']['len'] == 0:
-        print( ' No tracked/changed files present.' )
-        print( ' Continue will bump rev and thus {} will change.'.\
+        print( '\n No tracked/changed files present.' )
+        print( '   Continue will bump rev and thus {} will change.'.\
             format(projFileWithVerNumInIt))
-        goOn = input( '   Continue (y/n)? -> ' )  # <-- EXIT ?
+        goOn = input( '   Continue (y/n)? -> ' )      # <-- EXIT ?
         if goOn != 'y':
             sys.exit()
     #########################################
 
     ### Look for diffs in shaed files if appropriate.
-    #print(keyLst[choiceInt])
-    #if keyLst[choiceInt] in ['spiClock', 'sprinkler2', 'shared']:
-    #    print('look for diffs')
-    #    dirsToCmpLst = [ 
-    #        projDict['shared']['dir'],
-    #        projDict['spiClock']['dir'],
-    #        projDict['sprinkler2']['dir']
-    #    ]
-    #    lookForDiffs( dirsToCmpLst, fLstDict['expectedUntrackedFs']['fLst'] )
-    #
-    #sys.exit()
+    if keyLst[choiceInt] in ['spiClock', 'sprinkler2', 'shared']:
+        dirsToCmpLst = [ 
+            projDict['shared']['dir'],
+            projDict['spiClock']['dir'],
+            projDict['sprinkler2']['dir']
+        ]
+        thereAreDiffs = lookForDiffs( dirsToCmpLst,
+            [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
+              'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ])
+
+        if thereAreDiffs:
+            print( '\n There are diffs in shared files.' )
+            goOn = input( '   Continue (y/n)? -> ' )  # <-- EXIT ?
+            if goOn != 'y':
+                sys.exit()
     #########################################
 
     #### Get current version num, calculate new version num.
