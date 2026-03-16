@@ -7,7 +7,7 @@ import sys
 import os
 import re
 
-VER = 'v3.0.0 - 14-Mar-2026'
+VER = 'v3.0.1 - 15-Mar-2026'
 #############################################################################
 
 def mapTo2D(  flatList, numCols ):
@@ -104,15 +104,25 @@ def getVerNums( fName, numChanged, numTracked ):
         return curVStr, -3, newVStrwV
 
     newVIntLst = curVIntLst[:]
-    if pcntChange > 66:
-        newVIntLst[0] = newVIntLst[0]+1
-        newVIntLst[1] = 0
-        newVIntLst[2] = 0
-    elif pcntChange > 33:
-        newVIntLst[1] = newVIntLst[1]+1
-        newVIntLst[2] = 0
+
+    if numTracked > 3:
+        if pcntChange > 66:
+            newVIntLst[0] = newVIntLst[0]+1
+            newVIntLst[1] = 0
+            newVIntLst[2] = 0
+        elif pcntChange > 33:
+            newVIntLst[1] = newVIntLst[1]+1
+            newVIntLst[2] = 0
+        else:
+            newVIntLst[2] = newVIntLst[2]+1
     else:
         newVIntLst[2] = newVIntLst[2]+1
+        if newVIntLst[2] > 9:
+            newVIntLst[2] = 0
+            newVIntLst[1] = newVIntLst[1]+1
+            if newVIntLst[1] > 9:
+                newVIntLst[1] = 0
+                newVIntLst[0] = newVIntLst[0]+1
 
     newVStrLst = [ str(x) for x in newVIntLst ]
     newVStr    = '.'.join(newVStrLst)
@@ -435,6 +445,7 @@ if __name__ == '__main__':
     #########################################
 
     ### Get Desired Project To Release
+    print( '\n Releaser verion: {} '.format(VER))
     print( '\n Which project do you want to release.' )
     keyLst = list(projDict.keys())
     for idx,k in enumerate(keyLst):
@@ -583,8 +594,21 @@ if __name__ == '__main__':
     printStdOutOrStdErr( hasErr, stdO, stdE )
 #############################################################################
 
-    print( '\n Release Successful. \n' )
+    print( '\n Successfully pushed {} to GitHub.'.format(newVerStr) )
+    goOn = input( '   Do you want to "Release" it (y/n)? -> ' )  # <-- EXIT ?
+    if goOn != 'y':
+        print()
+        sys.exit()
 
+    releaseTxt = input( '\n   Enter release message -> ' )
+    releaseTxtWithQuotes = r'"{}."'.format( releaseTxt )
+
+    print( '\n gh Releasing on GitHub.' )
+    #       gh    release    create   v1.2.3      --notes   "Bugfix release"
+    cmd = ['gh', 'release', 'create', newVerStr, '--notes', releaseTxtWithQuotes]
+    hasErr, stdO, stdE = runCommand(cmd)
+    printStdOutOrStdErr( hasErr, stdO, stdE )
+    print()
 
     #runCommandTst()
     #tstMoveOrCopyFiles()
