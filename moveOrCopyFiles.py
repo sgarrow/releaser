@@ -17,7 +17,7 @@ def moveOrCopyFiles( src, dst, fLst, moveOrCopy ):
                 raise FileNotFoundError( ' {} not found.'.format(s) )
             if not s.is_file():
                 raise IsADirectoryError( ' {} is not a file.'.format(s) )
-        except Exception as e:
+        except Exception as e: # pylint: disable=W0718
             print( ' Error: {}'.format(e) )
         else:
             if moveOrCopy == 'Mov':
@@ -47,4 +47,3 @@ def tstMoveOrCopyFiles():
         #                src      dst   fLst       cmd
         moveOrCopyFiles( shrDir,  dstn, fLstPath, 'Copy' )
 #############################################################################
-

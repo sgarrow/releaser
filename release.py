@@ -7,71 +7,10 @@ import sys
 import os
 import re
 
-VER = 'v3.0.2 - 16-Mar-2026'
-#############################################################################
+import moveOrCopyFiles as mcf
+import printRoutines   as pr
 
-def mapTo2D(  flatList, numCols ):
-    # mapTo2D( [1,2,3,4,5,6,7,8], 2 ) = [[1,2],[3,4],[5,6],[7,8]]
-    twoD = [flatList[ii:ii+numCols] for ii in range(0,len(flatList),numCols)]
-    return twoD
-#############################################################################
-
-def printPathInfo(inPathInfo):
-    print()
-    print( ' inPathInfo   = {}'.format(inPathInfo   ))
-    print( '   inPathInfo.name   = {}'.format(inPathInfo.name   ))
-    print( '   inPathInfo.stem   = {}'.format(inPathInfo.stem   ))
-    print( '   inPathInfo.suffix = {}'.format(inPathInfo.suffix ))
-    print( '   inPathInfo.anchor = {}'.format(inPathInfo.anchor ))
-    print( '   inPathInfo.parent = {}'.format(inPathInfo.parent ))
-    print()
-#############################################################################
-
-def moveOrCopyFiles( src, dst, fLst, moveOrCopy ):
-
-    if moveOrCopy not in ['Mov','Copy']:
-        print(' moveOrCopy has invalid value.')
-        return
-    print('   {}ing from \n     {} to \n     {}.'.format(moveOrCopy,src,dst))
-
-    for file in fLst:
-        s =  src / file  # A Path join. All 3 vars type Path.
-        d =  dst / file  # A Path join. All 3 vars type Path.
-        # Move/Copy if source exists and is a file.
-        try:
-            if not s.exists():
-                raise FileNotFoundError( ' {} not found.'.format(s) )
-            if not s.is_file():
-                raise IsADirectoryError( ' {} is not a file.'.format(s) )
-        except Exception as e:
-            print( ' Error: {}'.format(e) )
-        else:
-            if moveOrCopy == 'Mov':
-                s.replace(d)
-                print( '       Moved {}.'.format(file))
-            elif moveOrCopy == 'Copy':
-                d.write_bytes(s.read_bytes())
-                print( '       Copied {}.'.format( file))
-#############################################################################
-
-def tstMoveOrCopyFiles():
-    clkDir   = Path( r'C:\01-home\14-python\temp\tstClkDir' )
-    sprDir   = Path( r'C:\01-home\14-python\temp\tstSprDir' )
-    shrDir   = Path( r'C:\01-home\14-python\temp\tstShrDir' )
-    dsts     = [clkDir, sprDir]
-    fLstStr  = [ 'd1.txt', 'd2.txt', 'd3.txt' ]
-    fLstPath = [ Path(x) for x in fLstStr ]
-
-    print( '\n Moving files.' )
-    #                src     dst     fLst       cmd
-    moveOrCopyFiles( clkDir, shrDir, fLstPath, 'Mov' )
-
-    x = input( 'Press Return to Continue.' )
-
-    print( '\n Copying files.' )
-    for dstn in dsts:
-        #                src      dst   fLst       cmd
-        moveOrCopyFiles( shrDir,  dstn, fLstPath, 'Copy' )
+VER = 'v3.0.3 - 16-Mar-2026'
 #############################################################################
 
 def getVerNums( fName, numChanged, numTracked ):
@@ -97,7 +36,7 @@ def getVerNums( fName, numChanged, numTracked ):
             curVLstwV   = [ x.strip() for x in curVStr.split('.') ]
             curVLstwoV  = [curVLstwV[0][1:]] + curVLstwV[1:]
             curVIntLst  = [int(x) for x in curVLstwoV]
-            verFound = True
+            verFound    = True
             break
 
     if not verFound:
@@ -161,6 +100,7 @@ def runCommandTst():
     print( 'err = \n', err, '\nstdout = \n', stdOut, '\nstderr = \n',stdErr )
     return err, stdOut, stdErr
     #################################
+
 def getAllTrackedFs():
     allTrackedFiles = []
     cmdLst = [ 'git', 'ls-files' ]
@@ -170,6 +110,7 @@ def getAllTrackedFs():
         allTrackedFiles = [line.split()[0] for line in stdOutLines]
     return err, stdOut, stdErr, allTrackedFiles
     #################################
+
 def getChangedTrackedFs():
     changedTrackedFiles = []
     cmdLst = [ 'git', 'status', '--porcelain' ]
@@ -180,6 +121,7 @@ def getChangedTrackedFs():
             [line.split()[1] for line in stdOutLines if line.split()[0]=='M']
     return err, stdOut, stdErr, changedTrackedFiles
     #################################
+
 def getUntrackedFs():
     untrackedFiles = []
     cmdLst = [ 'git', 'status', '--porcelain' ]
@@ -190,6 +132,7 @@ def getUntrackedFs():
             [line.split()[1] for line in stdOutLines if line.split()[0]=='??']
     return err, stdOut, stdErr, untrackedFiles
     #################################
+
 def getExpectedUntrackedFs(projectsDict):
     err, stdOut, stdErr = True, '', ' Active Project not Found.'
 
@@ -215,9 +158,12 @@ def getExpectedUntrackedFs(projectsDict):
 
     return err, stdOut, stdErr, expectedUntrackedFiles
     #################################
+
 def getUnexpectedUntrackedFs( untracked, expectedUntracked ):
     err, stdOut, stdErr = False, '', ''
     unexpectedUntrackedFiles = list(set(untracked) - set(expectedUntracked))
+    if '__pycache__/' in unexpectedUntrackedFiles:
+        unexpectedUntrackedFiles.remove('__pycache__/')
     return err, stdOut, stdErr, unexpectedUntrackedFiles
 #############################################################################
 
@@ -282,30 +228,6 @@ def getFileLstDict(projectsDict):
     return fDict
 #############################################################################
 
-def printFileLstDict(inFileListDict, pEn):
-    #pp.pprint(inFileListDict)
-    printOrder = [
-        'trackedFs',    'trackedPyFs',         'changedTrackedPyFs',
-        'untrackedFs',  'expectedUntrackedFs', 'changedTrackedFs',
-        'unexpectedUntrackedFs'
-    ]
-    groupSize = 2  if pEn else 3
-    width     = 50 if pEn else 25
-
-    for el in printOrder:
-        print( '\n   {} (len  = {}) = '.format(el,inFileListDict[el]['len']))
-        if el == 'trackedFs' and not pEn:
-            print( '   Not printed.  Use /p cmd line arg.')
-            continue
-        #pp.pprint(inFileListDict[el]['fLst'])
-        d2FileList = mapTo2D( inFileListDict[el]['fLst'], groupSize )
-        pStr = ''
-        for group in d2FileList:
-            pStr = [ '{}{}'.format((width-len(x))*' ',x) for x in group ]
-            [print(x,end = '') for x in pStr] # pylint: disable=W0106
-            print()
-#############################################################################
-
 def exitOnErrorsInFileLstDict(inFileListDict):
     print()
     doExit = False
@@ -318,23 +240,6 @@ def exitOnErrorsInFileLstDict(inFileListDict):
             print()
             doExit = True
     if doExit:
-        print( ' Exiting, RE: Error.\n' )
-        sys.exit()
-#############################################################################
-
-def printStdOutOrStdErr( hasError, stdOut, stdErr ):
-
-    if hasError:
-        print( '   error = {}'.format(hasError))
-        msgLines = stdErr.split('\n')
-    else:
-        msgLines = stdOut.split('\n')
-
-    for theLine in  msgLines:
-        if theLine != '\n':  # Don't print blank lines.
-            print('     {}'.format(theLine))
-
-    if hasError:
         print( ' Exiting, RE: Error.\n' )
         sys.exit()
 #############################################################################
@@ -474,7 +379,7 @@ if __name__ == '__main__':
     projGithubUrl          = projDict[keyLst[choiceInt]]['url']
     projDir                = projDict[keyLst[choiceInt]]['dir']
     os.chdir(projDir)
-    printPathInfo(projDir)
+    pr.printPathInfo(projDir)
     print( '\n Releasing {}\n'.format(projDir) )
     print( ' Current working directory: {}'.format(Path.cwd() ))
     #########################################
@@ -482,7 +387,7 @@ if __name__ == '__main__':
     ### Get changed,untracked,etc files of selected project.
     print( '\n Getting changed and untracked files.' )
     fLstDict = getFileLstDict(projDict)
-    printFileLstDict( fLstDict, prnEn )
+    pr.printFileLstDict( fLstDict, prnEn )
     exitOnErrorsInFileLstDict( fLstDict )
 
     if fLstDict['unexpectedUntrackedFs']['len'] > 0:
@@ -504,7 +409,7 @@ if __name__ == '__main__':
 
     ### Look for diffs in shaed files if appropriate.
     if keyLst[choiceInt] in ['spiClock', 'sprinkler2', 'shared']:
-        dirsToCmpLst = [ 
+        dirsToCmpLst = [
             projDict['shared']['dir'],
             projDict['spiClock']['dir'],
             projDict['sprinkler2']['dir']
@@ -563,17 +468,17 @@ if __name__ == '__main__':
     for f in fLstDict['changedTrackedFs']['fLst']:
         cmd = cmdBaseLst + [f]
         hasErr, stdO, stdE = runCommand(cmd)
-        printStdOutOrStdErr( hasErr, stdO, stdE )
+        pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
-    commitTxt = input( '\n Enter GIT commit message -> ' )
+    commitTxt = input( ' Enter GIT commit message -> ' )
     commitTxtWithQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
     #########################################
 
     print( '\n GIT Committing.' )
     cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
     hasErr, stdO, stdE = runCommand(cmd)
-    printStdOutOrStdErr( hasErr, stdO, stdE )
+    pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
     #@rem only needed on first push
@@ -585,14 +490,14 @@ if __name__ == '__main__':
 
     cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
     hasErr, stdO, stdE = runCommand(cmd)
-    printStdOutOrStdErr( hasErr, stdO, stdE )
+    pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
-    print( '\n GIT Pushing to GitHub.' )
+    print( ' GIT Pushing to GitHub.' )
     cmd = ['git', 'push', '-u', 'origin', 'main']
     hasErr, stdO, stdE = runCommand(cmd)
-    printStdOutOrStdErr( hasErr, stdO, stdE )
-#############################################################################
+    pr.printStdOutOrStdErr( hasErr, stdO, stdE )
+    #########################################
 
     print( '\n Successfully pushed {} to GitHub.'.format(newVerStr) )
     goOn = input( '   Do you want to "Release" it (y/n)? -> ' )  # <-- EXIT ?
@@ -604,11 +509,11 @@ if __name__ == '__main__':
     releaseTxtWithQuotes = r'"{}."'.format( releaseTxt )
 
     print( '\n gh Releasing on GitHub.' )
-    #       gh    release    create   v1.2.3      --notes   "Bugfix release"
     cmd = ['gh', 'release', 'create', newVerStr, '--notes', releaseTxtWithQuotes]
     hasErr, stdO, stdE = runCommand(cmd)
-    printStdOutOrStdErr( hasErr, stdO, stdE )
+    pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     print()
+    #########################################
 
     #runCommandTst()
-    #tstMoveOrCopyFiles()
+    #mcf.tstMoveOrCopyFiles()

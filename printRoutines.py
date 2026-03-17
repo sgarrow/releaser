@@ -1,3 +1,6 @@
+import sys
+#############################################################################
+
 def mapTo2D(  flatList, numCols ):
     # mapTo2D( [1,2,3,4,5,6,7,8], 2 ) = [[1,2],[3,4],[5,6],[7,8]]
     twoD = [flatList[ii:ii+numCols] for ii in range(0,len(flatList),numCols)]
@@ -55,5 +58,3 @@ def printStdOutOrStdErr( hasError, stdOut, stdErr ):
         print( ' Exiting, RE: Error.\n' )
         sys.exit()
 #############################################################################
-
-
