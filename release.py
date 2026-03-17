@@ -10,7 +10,7 @@ import re
 import moveOrCopyFiles as mcf
 import printRoutines   as pr
 
-VER = 'v3.0.3 - 16-Mar-2026'
+VER = 'v3.0.4 - 16-Mar-2026'
 #############################################################################
 
 def getVerNums( fName, numChanged, numTracked ):
@@ -463,6 +463,15 @@ if __name__ == '__main__':
             fLstDict['changedTrackedFs']['len'] + 1
     #########################################
 
+    #@rem only needed on first push
+    #@rem git branch -M main
+    #@rem git remote add origin https://github.com/sgarrow/spiClock.git
+    #########################################
+
+    commitTxt = input( ' Enter GIT commit message -> ' )
+    commitTxtWithQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
+    #########################################
+
     print( '\n GIT Adding appropriate files.' )
     cmdBaseLst = [ 'git', 'add' ]
     for f in fLstDict['changedTrackedFs']['fLst']:
@@ -471,23 +480,13 @@ if __name__ == '__main__':
         pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
-    commitTxt = input( ' Enter GIT commit message -> ' )
-    commitTxtWithQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
-    #########################################
-
     print( '\n GIT Committing.' )
     cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
     hasErr, stdO, stdE = runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
-    #@rem only needed on first push
-    #@rem git branch -M main
-    #@rem git remote add origin https://github.com/sgarrow/spiClock.git
-    #########################################
-
     print( '\n GIT Setting GitHub URL.' )
-
     cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
     hasErr, stdO, stdE = runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
