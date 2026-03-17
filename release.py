@@ -7,7 +7,7 @@ import sys
 import os
 import re
 
-VER = 'v3.0.1 - 15-Mar-2026'
+VER = 'v3.0.2 - 16-Mar-2026'
 #############################################################################
 
 def mapTo2D(  flatList, numCols ):
