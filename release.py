@@ -1,23 +1,23 @@
 from itertools import combinations
 from pathlib   import Path
 import datetime   as dt
-import pprint     as pp # pylint: disable=W0611
+import pprint     as pp       # pylint: disable=W0611
 import sys
 import os
 import re
 
-import moveOrCopyFiles as mcf
+import moveOrCopyFiles as mcf # pylint: disable=W0611
 import runTerminalCmd  as rtc
 import printRoutines   as pr
 
-VER = 'v4.0.0 - 17-Mar-2026'
+VER = 'v4.0.1 - 17-Mar-2026'
 #############################################################################
 
-def getVerNums( fName, numChanged, numTracked ):
+def getVerNums( fName, numChangedPy, numTrackedPy ):
     curVStr   = None
     newVStrwV = None
     try:
-        pcntChange = int((numChanged/numTracked) * 100.0)
+        pcntChange = int((numChangedPy/numTrackedPy) * 100.0)
     except ZeroDivisionError:
         return curVStr, -1, newVStrwV
 
@@ -44,7 +44,7 @@ def getVerNums( fName, numChanged, numTracked ):
 
     newVIntLst = curVIntLst[:]
 
-    if numTracked > 3:
+    if numTrackedPy > 4:
         if pcntChange > 66:
             newVIntLst[0] = newVIntLst[0]+1
             newVIntLst[1] = 0
@@ -403,7 +403,7 @@ if __name__ == '__main__':
                 fLstDict['trackedPyFs']['len']
     )
     date = dt.datetime.now().strftime( '%d-%b-%Y' )
-    print('   Percent of tracked .py files chanhged = {}%'.format(pcntChanged))
+    print('   Percent of tracked .py files changed = {}%'.format(pcntChanged))
     print('   Old/New Version Numbers = {}/{}'.format(curVerStr, newVerStr))
 
     if pcntChanged == -1:
@@ -418,6 +418,11 @@ if __name__ == '__main__':
     #########################################
 
     #### Write new ver num into source, add to change fLst if appropriate.
+    print( '\n About to Update app Ver and Date in {}'.format(projFileWithVerNumInIt) )
+    goOn = input( '   Continue (y/n)? -> ' )      # <-- EXIT ?
+    if goOn != 'y':
+        sys.exit()
+
     print( '\n Updating app Ver and Date in {}'.format(projFileWithVerNumInIt) )
     fileToChangeVerNumIn = Path( projFileWithVerNumInIt )
     text = fileToChangeVerNumIn.read_text(encoding='utf-8')
@@ -447,24 +452,36 @@ if __name__ == '__main__':
         cmd = cmdBaseLst + [f]
         hasErr, stdO, stdE = rtc.runCommand(cmd)
         pr.printStdOutOrStdErr( hasErr, stdO, stdE )
+        if hasErr:
+            print( ' Exiting, RE: Error.\n' )
+            sys.exit()
     #########################################
 
     print( '\n GIT Committing.' )
     cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
+    if hasErr:
+        print( ' Exiting, RE: Error.\n' )
+        sys.exit()
     #########################################
 
     print( '\n GIT Setting GitHub URL.' )
     cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
+    if hasErr:
+        print( ' Exiting, RE: Error.\n' )
+        sys.exit()
     #########################################
 
     print( ' GIT Pushing to GitHub.' )
     cmd = ['git', 'push', '-u', 'origin', 'main']
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
+    if hasErr:
+        print( ' Exiting, RE: Error.\n' )
+        sys.exit()
     #########################################
 
     print( '\n Successfully pushed {} to GitHub.'.format(newVerStr) )
@@ -480,8 +497,8 @@ if __name__ == '__main__':
     cmd = ['gh', 'release', 'create', newVerStr, '--notes', releaseTxtWithQuotes]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
+    if hasErr:
+        print( ' Exiting, RE: Error.\n' )
+        sys.exit()
     print()
     #########################################
-
-    #runCommandTst()
-    #mcf.tstMoveOrCopyFiles()

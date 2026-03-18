@@ -50,4 +50,3 @@ def tstMoveOrCopyFiles():
 
 if __name__ == '__main__':
     tstMoveOrCopyFiles()
-

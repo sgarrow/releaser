@@ -1,5 +1,3 @@
-import sys
-#############################################################################
 ESC_CODE       = '{}'.format( '\x1b' )
 
 TERMINATE_CODE = '{}'.format( '[0'  )
@@ -72,8 +70,4 @@ def printStdOutOrStdErr( hasError, stdOut, stdErr ):
     for theLine in  msgLines:
         if theLine != '\n':  # Don't print blank lines.
             print('     {}'.format(theLine))
-
-    if hasError:
-        print( ' Exiting, RE: Error.\n' )
-        sys.exit()
 #############################################################################
