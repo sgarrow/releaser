@@ -1,6 +1,5 @@
 from itertools import combinations
 from pathlib   import Path
-import subprocess as sp
 import datetime   as dt
 import pprint     as pp # pylint: disable=W0611
 import sys
@@ -8,9 +7,10 @@ import os
 import re
 
 import moveOrCopyFiles as mcf
+import runTerminalCmd  as rtc
 import printRoutines   as pr
 
-VER = 'v3.0.4 - 16-Mar-2026'
+VER = 'v4.0.0 - 17-Mar-2026'
 #############################################################################
 
 def getVerNums( fName, numChanged, numTracked ):
@@ -70,41 +70,10 @@ def getVerNums( fName, numChanged, numTracked ):
     return curVStr, pcntChange, newVStrwV
 #############################################################################
 
-def runCommand( cmdLst ):
-
-    # If check is true, and the process exits with a non-zero exit code,
-    # a CalledProcessError exception will be raised. Attributes of that
-    # exception hold the arguments, the exit code, and stdout and stderr
-    # if they were captured.
-
-    print('   {}'.format(' '.join(cmdLst)))
-    error = False
-    try:
-        result = sp.run(
-            cmdLst,
-            capture_output = True,
-            text           = True,
-            shell          = False,
-            check          = True,
-        )
-        return error, result.stdout.strip(), result.stderr.strip()
-    except sp.CalledProcessError as e:
-        error = True
-        return error, e.stdout.strip(),      e.stderr.strip()
-#############################################################################
-
-def runCommandTst():
-    #cmdLst = [ 'git', 'ls-files' ]
-    cmdLst = [ 'cmd', '/c', 'dir' ]
-    err, stdOut, stdErr = runCommand(cmdLst)
-    print( 'err = \n', err, '\nstdout = \n', stdOut, '\nstderr = \n',stdErr )
-    return err, stdOut, stdErr
-    #################################
-
 def getAllTrackedFs():
     allTrackedFiles = []
     cmdLst = [ 'git', 'ls-files' ]
-    err, stdOut,stdErr = runCommand(cmdLst)
+    err, stdOut,stdErr = rtc.runCommand(cmdLst)
     if not err:
         stdOutLines = stdOut.split('\n')
         allTrackedFiles = [line.split()[0] for line in stdOutLines]
@@ -114,7 +83,7 @@ def getAllTrackedFs():
 def getChangedTrackedFs():
     changedTrackedFiles = []
     cmdLst = [ 'git', 'status', '--porcelain' ]
-    err, stdOut,stdErr = runCommand(cmdLst)
+    err, stdOut,stdErr = rtc.runCommand(cmdLst)
     if not err:
         stdOutLines = stdOut.split('\n')
         changedTrackedFiles = \
@@ -125,7 +94,7 @@ def getChangedTrackedFs():
 def getUntrackedFs():
     untrackedFiles = []
     cmdLst = [ 'git', 'status', '--porcelain' ]
-    err, stdOut,stdErr = runCommand(cmdLst)
+    err, stdOut,stdErr = rtc.runCommand(cmdLst)
     if not err:
         stdOutLines = stdOut.split('\n')
         untrackedFiles = \
@@ -379,7 +348,7 @@ if __name__ == '__main__':
     projGithubUrl          = projDict[keyLst[choiceInt]]['url']
     projDir                = projDict[keyLst[choiceInt]]['dir']
     os.chdir(projDir)
-    pr.printPathInfo(projDir)
+    #pr.printPathInfo(projDir)
     print( '\n Releasing {}\n'.format(projDir) )
     print( ' Current working directory: {}'.format(Path.cwd() ))
     #########################################
@@ -468,7 +437,7 @@ if __name__ == '__main__':
     #@rem git remote add origin https://github.com/sgarrow/spiClock.git
     #########################################
 
-    commitTxt = input( ' Enter GIT commit message -> ' )
+    commitTxt = input( '\n Enter GIT commit message -> ' )
     commitTxtWithQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
     #########################################
 
@@ -476,25 +445,25 @@ if __name__ == '__main__':
     cmdBaseLst = [ 'git', 'add' ]
     for f in fLstDict['changedTrackedFs']['fLst']:
         cmd = cmdBaseLst + [f]
-        hasErr, stdO, stdE = runCommand(cmd)
+        hasErr, stdO, stdE = rtc.runCommand(cmd)
         pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
     print( '\n GIT Committing.' )
     cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
-    hasErr, stdO, stdE = runCommand(cmd)
+    hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
     print( '\n GIT Setting GitHub URL.' )
     cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
-    hasErr, stdO, stdE = runCommand(cmd)
+    hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
     print( ' GIT Pushing to GitHub.' )
     cmd = ['git', 'push', '-u', 'origin', 'main']
-    hasErr, stdO, stdE = runCommand(cmd)
+    hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     #########################################
 
@@ -509,7 +478,7 @@ if __name__ == '__main__':
 
     print( '\n gh Releasing on GitHub.' )
     cmd = ['gh', 'release', 'create', newVerStr, '--notes', releaseTxtWithQuotes]
-    hasErr, stdO, stdE = runCommand(cmd)
+    hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     print()
     #########################################

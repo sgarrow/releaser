@@ -47,3 +47,7 @@ def tstMoveOrCopyFiles():
         #                src      dst   fLst       cmd
         moveOrCopyFiles( shrDir,  dstn, fLstPath, 'Copy' )
 #############################################################################
+
+if __name__ == '__main__':
+    tstMoveOrCopyFiles()
+
