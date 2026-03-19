@@ -24,12 +24,12 @@ def runCommand( cmdLst ):
         return error, e.stdout.strip(),      e.stderr.strip()
     except FileNotFoundError as e:
         error = True
-        return error, '', e
+        return error, '', str(e)
 #############################################################################
 
 def runCommandTst():
     cmdLst = [ 'gi', 'ls-files' ]
-    cmdLst = [ 'cmd', '/c', 'dir' ]
+    #cmdLst = [ 'cmd', '/c', 'dir' ]
     err, stdOut, stdErr = runCommand(cmdLst)
     print( '\nerr = \n\n', err, '\n\nstdout = \n\n', stdOut, '\n\nstderr = \n\n',stdErr )
     print()

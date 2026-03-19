@@ -7,10 +7,11 @@ import os
 import re
 
 import moveOrCopyFiles as mcf # pylint: disable=W0611
+import asciiColorCodes as ACC
 import runTerminalCmd  as rtc
 import printRoutines   as pr
 
-VER = 'v4.0.1 - 17-Mar-2026'
+VER = 'v4.1.0 - 18-Mar-2026'
 #############################################################################
 
 def getVerNums( fName, numChangedPy, numTrackedPy ):
@@ -73,6 +74,7 @@ def getVerNums( fName, numChangedPy, numTrackedPy ):
 def getAllTrackedFs():
     allTrackedFiles = []
     cmdLst = [ 'git', 'ls-files' ]
+    #cmdLst = [ 'git', 'ls-file' ] # shg
     err, stdOut,stdErr = rtc.runCommand(cmdLst)
     if not err:
         stdOutLines = stdOut.split('\n')
@@ -83,6 +85,7 @@ def getAllTrackedFs():
 def getChangedTrackedFs():
     changedTrackedFiles = []
     cmdLst = [ 'git', 'status', '--porcelain' ]
+    #cmdLst = [ 'gi', 'status', '--porcelain' ] # shg
     err, stdOut,stdErr = rtc.runCommand(cmdLst)
     if not err:
         stdOutLines = stdOut.split('\n')
@@ -197,20 +200,19 @@ def getFileLstDict(projectsDict):
     return fDict
 #############################################################################
 
-def exitOnErrorsInFileLstDict(inFileListDict):
-    print()
-    doExit = False
+def lookForErrorsInFileLstDict(inFileListDict):
+    rspMsg = ''
+    errorsPresent = False
     for kk,v in inFileListDict.items():
         if v['sts']:
-            print( ' {:23} error = {}'.format(kk, v['sts']))
+            if rspMsg == '':
+                rspMsg += '\n Exiting, RE: Error(s) in fileLstDict.\n'
+            rspMsg += '\n   {:23} error = {}\n'.format(kk, v['sts'])
             erMsgLines = v['stdE'].split('\n')
             for errLine in  erMsgLines:
-                print('     {}'.format(errLine))
-            print()
-            doExit = True
-    if doExit:
-        print( ' Exiting, RE: Error.\n' )
-        sys.exit()
+                rspMsg += '     {}\n'.format(errLine)
+            errorsPresent = True
+    return errorsPresent, rspMsg
 #############################################################################
 
 def lookForDiffs( dirsToComp, fLstStr ):
@@ -261,17 +263,8 @@ def lookForDiffs( dirsToComp, fLstStr ):
     return differencesExist
 #############################################################################
 
-if __name__ == '__main__':
-
-    ### Get Command Line Args.
-    arguments  = sys.argv
-    scriptName = arguments[0]
-    userArgs   = arguments[1:]
-    prnEn      = (len(userArgs) > 0 and '/p' in userArgs)
-    #########################################
-
-    ### Build Project Dictionary
-    projDict = {
+def buildProjectDict():
+    prjDict = {
     'spiClock':
         {'dir' :Path( r'C:\01-home\14-python\gitTrackedCode\spiClock'),
          'verNumFile':'cmdVectors.py',
@@ -315,21 +308,19 @@ if __name__ == '__main__':
          'url'       :'https://github.com/sgarrow/releaser.git'
         },
     }
-    #pp.pprint(projDict)
-    #########################################
+    return prjDict
+#############################################################################
+def getDsrdPrjDictKey(prjDict):
 
-    ### Get Desired Project To Release
-    print( '\n Releaser verion: {} '.format(VER))
     print( '\n Which project do you want to release.' )
     keyLst = list(projDict.keys())
     for idx,k in enumerate(keyLst):
         print( '  {} - {}'.format( idx, k ) )
-
+    
     while True:
         choice = input( '  Enter project number (or q (quit)) --> ' )
         if choice == 'q':
-            print()
-            sys.exit()
+            return 'quit'
         try:
             choiceInt = int(choice)
         except ValueError:
@@ -340,13 +331,35 @@ if __name__ == '__main__':
                 print( '  Invalid choice integer' )
                 continue
         break
+    return keyLst[choiceInt]
+#############################################################################
+
+if __name__ == '__main__':
+
+    print( '\n Releaser verion: {} '.format(VER))
+
+    ### Get Command Line Args.
+    arguments  = sys.argv
+    scriptName = arguments[0]
+    userArgs   = arguments[1:]
+    prnEn      = (len(userArgs) > 0 and '/p' in userArgs)
+    #########################################
+
+    ### Build Project Dictionary.
+    projDict = buildProjectDict()
+    #########################################
+
+    ### Get Desired Project To Release.
+    dsrdPrjDictKey = getDsrdPrjDictKey(projDict)
+    if dsrdPrjDictKey == 'quit':
+        sys.exit()
     #########################################
 
     ### Set "Working Variables" (from proj dict) and set cwd.
-    projDict[keyLst[choiceInt]]['active'] = True
-    projFileWithVerNumInIt = projDict[keyLst[choiceInt]]['verNumFile']
-    projGithubUrl          = projDict[keyLst[choiceInt]]['url']
-    projDir                = projDict[keyLst[choiceInt]]['dir']
+    projDict[dsrdPrjDictKey]['active'] = True
+    projFileWithVerNumInIt = projDict[dsrdPrjDictKey]['verNumFile']
+    projGithubUrl          = projDict[dsrdPrjDictKey]['url']
+    projDir                = projDict[dsrdPrjDictKey]['dir']
     os.chdir(projDir)
     #pr.printPathInfo(projDir)
     print( '\n Releasing {}\n'.format(projDir) )
@@ -357,8 +370,17 @@ if __name__ == '__main__':
     print( '\n Getting changed and untracked files.' )
     fLstDict = getFileLstDict(projDict)
     pr.printFileLstDict( fLstDict, prnEn )
-    exitOnErrorsInFileLstDict( fLstDict )
+    #########################################
 
+    ### Exit if problems getting changed/untracked files.
+    errFound, funcRspMsg = lookForErrorsInFileLstDict( fLstDict )
+    if errFound:
+        print( '{}{}{}'.format( ACC.RED_BOLD, funcRspMsg, ACC.OFF ))
+        sys.exit()
+    #########################################
+
+    ### Exit, if desired, if unexpected/untracked files present or 
+    ### no tracked/changed files present.
     if fLstDict['unexpectedUntrackedFs']['len'] > 0:
         print( '\n unexpected/untracked files present.')
         print( '   Continuing will not add them.')
@@ -376,8 +398,9 @@ if __name__ == '__main__':
             sys.exit()
     #########################################
 
-    ### Look for diffs in shaed files if appropriate.
-    if keyLst[choiceInt] in ['spiClock', 'sprinkler2', 'shared']:
+    ### Look for diffs in shared files if appropriate.
+    thereAreDiffs = False
+    if dsrdPrjDictKey in ['spiClock', 'sprinkler2', 'shared']:
         dirsToCmpLst = [
             projDict['shared']['dir'],
             projDict['spiClock']['dir'],
@@ -386,15 +409,17 @@ if __name__ == '__main__':
         thereAreDiffs = lookForDiffs( dirsToCmpLst,
             [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
               'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ])
-
-        if thereAreDiffs:
-            print( '\n There are diffs in shared files.' )
-            goOn = input( '   Continue (y/n)? -> ' )  # <-- EXIT ?
-            if goOn != 'y':
-                sys.exit()
     #########################################
 
-    #### Get current version num, calculate new version num.
+    ### Exit, if desired, if diffs in shared files are problematic.
+    if thereAreDiffs:
+        print( '\n There are diffs in shared files.' )
+        goOn = input( '   Continue (y/n)? -> ' )  # <-- EXIT ?
+        if goOn != 'y':
+            sys.exit()
+    #########################################
+
+    #### Get current ver num, calc new version, get date.
     print( '\n Getting curr/new Version Number and Date' )
 
     curVerStr, pcntChanged, newVerStr = \
@@ -412,17 +437,23 @@ if __name__ == '__main__':
         print( '\n   Error getting ver num (file not found).\n')
     if pcntChanged == -3:
         print( '\n   Error getting ver num (search string not found).\n')
+    #########################################
+
+    #### Exit if there was a problem getting/calculating version numbers.
     if pcntChanged < 0:
         print( ' Exiting, RE: Error.\n' )
         sys.exit()  # <-- AUTO-EXIT ON ERROR !!
     #########################################
 
-    #### Write new ver num into source, add to change fLst if appropriate.
+    #### Last chance to exit before changing ver num in source and releasing.
     print( '\n About to Update app Ver and Date in {}'.format(projFileWithVerNumInIt) )
     goOn = input( '   Continue (y/n)? -> ' )      # <-- EXIT ?
     if goOn != 'y':
         sys.exit()
+    #########################################
 
+    #### Write new ver num and date into source, 
+    ###  add file that contains ver num to fLst if appropriate.
     print( '\n Updating app Ver and Date in {}'.format(projFileWithVerNumInIt) )
     fileToChangeVerNumIn = Path( projFileWithVerNumInIt )
     text = fileToChangeVerNumIn.read_text(encoding='utf-8')
@@ -442,10 +473,12 @@ if __name__ == '__main__':
     #@rem git remote add origin https://github.com/sgarrow/spiClock.git
     #########################################
 
+    #### Get commit message.
     commitTxt = input( '\n Enter GIT commit message -> ' )
     commitTxtWithQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
     #########################################
 
+    #### git add
     print( '\n GIT Adding appropriate files.' )
     cmdBaseLst = [ 'git', 'add' ]
     for f in fLstDict['changedTrackedFs']['fLst']:
@@ -457,6 +490,7 @@ if __name__ == '__main__':
             sys.exit()
     #########################################
 
+    #### git commit
     print( '\n GIT Committing.' )
     cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
@@ -466,6 +500,7 @@ if __name__ == '__main__':
         sys.exit()
     #########################################
 
+    #### git set url
     print( '\n GIT Setting GitHub URL.' )
     cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
@@ -475,6 +510,7 @@ if __name__ == '__main__':
         sys.exit()
     #########################################
 
+    #### git push
     print( ' GIT Pushing to GitHub.' )
     cmd = ['git', 'push', '-u', 'origin', 'main']
     hasErr, stdO, stdE = rtc.runCommand(cmd)
@@ -484,12 +520,15 @@ if __name__ == '__main__':
         sys.exit()
     #########################################
 
+    #### Exit or release?
     print( '\n Successfully pushed {} to GitHub.'.format(newVerStr) )
     goOn = input( '   Do you want to "Release" it (y/n)? -> ' )  # <-- EXIT ?
     if goOn != 'y':
         print()
         sys.exit()
+    #########################################
 
+    #### Release.
     releaseTxt = input( '\n   Enter release message -> ' )
     releaseTxtWithQuotes = r'"{}."'.format( releaseTxt )
 

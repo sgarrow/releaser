@@ -1,18 +1,5 @@
-ESC_CODE       = '{}'.format( '\x1b' )
-
-TERMINATE_CODE = '{}'.format( '[0'  )
-
-RED_CODE       = '{}'.format( '[31' )
-WHITE_CODE     = '{}'.format( '[37' )
-BOLD_ON_CODE   = '{}'.format( '1'    )
-
-RED        = '{}{}m'.format(    ESC_CODE, RED_CODE                 )
-RED_BOLD   = '{}{};{}m'.format( ESC_CODE, RED_CODE,   BOLD_ON_CODE )
-WHITE_BOLD = '{}{};{}m'.format( ESC_CODE, WHITE_CODE, BOLD_ON_CODE )
-
-OFF        = '{}{}m'.format(    ESC_CODE, TERMINATE_CODE           )
+import asciiColorCodes as ACC
 #############################################################################
-
 
 def mapTo2D(  flatList, numCols ):
     # mapTo2D( [1,2,3,4,5,6,7,8], 2 ) = [[1,2],[3,4],[5,6],[7,8]]
@@ -45,7 +32,7 @@ def printFileLstDict(inFileListDict, pEn):
     for el in printOrder:
 
         print( '\n   {}{}{} (len  = {}) = '.\
-            format( WHITE_BOLD,el,OFF, inFileListDict[el]['len']))
+            format( ACC.WHITE_BOLD,el,ACC.OFF, inFileListDict[el]['len']))
 
         if el == 'trackedFs' and not pEn:
             print( '   Not printed.  Use /p cmd line arg.')
