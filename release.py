@@ -1,22 +1,95 @@
 from itertools import combinations
 from pathlib   import Path
-import datetime   as dt
-import pprint     as pp       # pylint: disable=W0611
+
+import datetime as dt
+import pprint   as pp         # pylint: disable=W0611
 import sys
 import os
 import re
 
 import moveOrCopyFiles as mcf # pylint: disable=W0611
-import asciiColorCodes as ACC
+import fileLstCreator  as flc
 import runTerminalCmd  as rtc
 import printRoutines   as pr
+import asciiColorCodes as ACC
 
-VER = 'v4.1.0 - 18-Mar-2026'
+VER = 'v4.1.1 - 19-Mar-2026'
+#############################################################################
+
+def makeSingleDictContainingMetaDataOnAllProjects():
+
+    fileBase = Path(r'C:\01-home\14-python\gitTrackedCode')
+    webBase  = 'https://github.com/sgarrow/'
+
+    prjDict  = {
+        'spiClock':
+            {'dir'     : fileBase / Path(r'spiClock'),
+             'url'     : webBase  + 'spiClock.git',
+             'verFile' : 'cmdVectors.py', 
+             'active'  : False },
+        'sprinkler2':
+            {'dir'     : fileBase / Path(r'sprinkler2'),
+             'url'     : webBase  + 'sprinkler2.git',
+             'verFile' : 'cmdVectors.py',
+              'active' : False },
+        'shared':
+            {'dir'     : fileBase / Path(r'sharedClientServerCode'),
+             'url'     : webBase  + 'sharedClientServerCode.git',
+             'verFile' : 'fileIO.py',
+             'active'  : False },
+        'soduko':
+            {'dir'     : fileBase / Path(r'soduko'),
+             'url'     : webBase  + 'soduko.git',
+             'verFile' : 'soduko.py',
+             'active'  : False },
+        'multiCore':
+            {'dir'     : fileBase / Path(r'multicore'),
+             'url'     : webBase  + 'multiCore.git',
+             'verFile' : 'main.py',
+             'active'  : False },
+        'clientServer':
+            {'dir'     : fileBase / Path(r'clientServer'),
+             'url'     : webBase  + 'clientServer.git',
+             'verFile' : 'server.py',
+             'active'  : False },
+        'releaser':
+            {'dir'     : fileBase / Path( r'releaser'),
+             'url'     : webBase  + 'releaser.git',
+             'verFile' : 'release.py',
+             'active'  : False },
+    }
+    return prjDict
+#############################################################################
+
+def getDsrdPrjDictKey(prjDict):
+
+    print( '\n Which project do you want to release.' )
+    keyLst = list(prjDict.keys())
+    for idx,k in enumerate(keyLst):
+        print( '  {} - {}'.format( idx, k ) )
+
+    while True:
+        choice = input( '  Enter project number (or q (quit)) --> ' )
+        if choice == 'q':
+            return 'quit'
+        try:
+            choiceInt = int(choice)
+        except ValueError:
+            print( '  Must enter an integer' )
+            continue
+        else:
+            if choiceInt not in range(0,len(prjDict)):
+                print( '  Invalid choice integer' )
+                continue
+        break
+    return keyLst[choiceInt]
 #############################################################################
 
 def getVerNums( fName, numChangedPy, numTrackedPy ):
+
     curVStr   = None
     newVStrwV = None
+
     try:
         pcntChange = int((numChangedPy/numTrackedPy) * 100.0)
     except ZeroDivisionError:
@@ -71,153 +144,9 @@ def getVerNums( fName, numChangedPy, numTrackedPy ):
     return curVStr, pcntChange, newVStrwV
 #############################################################################
 
-def getAllTrackedFs():
-    allTrackedFiles = []
-    cmdLst = [ 'git', 'ls-files' ]
-    #cmdLst = [ 'git', 'ls-file' ] # shg
-    err, stdOut,stdErr = rtc.runCommand(cmdLst)
-    if not err:
-        stdOutLines = stdOut.split('\n')
-        allTrackedFiles = [line.split()[0] for line in stdOutLines]
-    return err, stdOut, stdErr, allTrackedFiles
-    #################################
-
-def getChangedTrackedFs():
-    changedTrackedFiles = []
-    cmdLst = [ 'git', 'status', '--porcelain' ]
-    #cmdLst = [ 'gi', 'status', '--porcelain' ] # shg
-    err, stdOut,stdErr = rtc.runCommand(cmdLst)
-    if not err:
-        stdOutLines = stdOut.split('\n')
-        changedTrackedFiles = \
-            [line.split()[1] for line in stdOutLines if line.split()[0]=='M']
-    return err, stdOut, stdErr, changedTrackedFiles
-    #################################
-
-def getUntrackedFs():
-    untrackedFiles = []
-    cmdLst = [ 'git', 'status', '--porcelain' ]
-    err, stdOut,stdErr = rtc.runCommand(cmdLst)
-    if not err:
-        stdOutLines = stdOut.split('\n')
-        untrackedFiles = \
-            [line.split()[1] for line in stdOutLines if line.split()[0]=='??']
-    return err, stdOut, stdErr, untrackedFiles
-    #################################
-
-def getExpectedUntrackedFs(projectsDict):
-    err, stdOut, stdErr = True, '', ' Active Project not Found.'
-
-    kk = ''
-    for kk,v in projectsDict.items():
-        if v['active']:
-            err = False
-            stdErr = ''
-            break
-
-    if kk == 'spiClock':
-        expectedUntrackedFiles   = \
-            [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
-              'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ]
-    elif kk == 'sprinkler2':
-        expectedUntrackedFiles   = \
-            [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
-              'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ]
-    elif kk == 'shared':
-        expectedUntrackedFiles = []
-    else:
-        expectedUntrackedFiles = []
-
-    return err, stdOut, stdErr, expectedUntrackedFiles
-    #################################
-
-def getUnexpectedUntrackedFs( untracked, expectedUntracked ):
-    err, stdOut, stdErr = False, '', ''
-    unexpectedUntrackedFiles = list(set(untracked) - set(expectedUntracked))
-    if '__pycache__/' in unexpectedUntrackedFiles:
-        unexpectedUntrackedFiles.remove('__pycache__/')
-    return err, stdOut, stdErr, unexpectedUntrackedFiles
-#############################################################################
-
-def getFileLstDict(projectsDict):
-    fDict = {
-        'trackedFs'            : 
-        { 'sts' : None, 'stdO':None, 'stdE':None, 'fLst':[], 'len':None,
-          'func': getAllTrackedFs         },
-
-        'changedTrackedFs'     :
-        { 'sts' : None, 'stdO':None, 'stdE':None, 'fLst':[], 'len':None,
-          'func': getChangedTrackedFs     },
-
-        'untrackedFs'          :
-        { 'sts' : None, 'stdO':None, 'stdE':None, 'fLst':[], 'len':None,
-          'func': getUntrackedFs          },
-
-        'expectedUntrackedFs'  :
-        { 'sts' : None, 'stdO':None, 'stdE':None, 'fLst':[], 'len':None,
-          'func': getExpectedUntrackedFs  },
-
-        'unexpectedUntrackedFs':
-        { 'sts' : None, 'stdO':None, 'stdE':None, 'fLst':[], 'len':None,
-          'func': getUnexpectedUntrackedFs},
-
-        'trackedPyFs'          :
-        { 'sts' : None, 'stdO':None, 'stdE':None, 'fLst':[], 'len':None,
-          'func': None                    },
-
-        'changedTrackedPyFs'   :
-        { 'sts' : None, 'stdO':None, 'stdE':None, 'fLst':[], 'len':None,
-          'func': None                    },
-    }
-
-    for kk,v in fDict.items():
-        if kk in ['unexpectedUntrackedFs','trackedPyFs','changedTrackedPyFs']:
-            continue
-        if kk in [ 'expectedUntrackedFs' ]:
-            s,o,e,l = v['func'](projectsDict)
-        else:
-            s,o,e,l = v['func']()
-        v['sts' ] = s
-        v['stdO'] = o
-        v['stdE'] = e
-        v['fLst'] = l
-
-    kk = 'unexpectedUntrackedFs'
-    s,o,e,l = fDict[kk]['func'](fDict['untrackedFs'       ]['fLst'],
-                              fDict['expectedUntrackedFs']['fLst'])
-    fDict[kk]['sts' ] = s
-    fDict[kk]['stdO'] = o
-    fDict[kk]['stdE'] = e
-    fDict[kk]['fLst'] = l
-
-    fDict['trackedPyFs']['fLst']        = \
-        [x for x in fDict['trackedFs'][       'fLst'] if x.endswith('.py')]
-    fDict['changedTrackedPyFs']['fLst'] = \
-        [x for x in fDict['changedTrackedFs']['fLst'] if x.endswith('.py')]
-
-    for kk,v in fDict.items():
-        v['len'] = len(v['fLst'])
-    return fDict
-#############################################################################
-
-def lookForErrorsInFileLstDict(inFileListDict):
-    rspMsg = ''
-    errorsPresent = False
-    for kk,v in inFileListDict.items():
-        if v['sts']:
-            if rspMsg == '':
-                rspMsg += '\n Exiting, RE: Error(s) in fileLstDict.\n'
-            rspMsg += '\n   {:23} error = {}\n'.format(kk, v['sts'])
-            erMsgLines = v['stdE'].split('\n')
-            for errLine in  erMsgLines:
-                rspMsg += '     {}\n'.format(errLine)
-            errorsPresent = True
-    return errorsPresent, rspMsg
-#############################################################################
-
 def lookForDiffs( dirsToComp, fLstStr ):
+
     print( '\n Looking for diffs among shared files.\n' )
-    print( fLstStr )
 
     differencesExist = False
     fLstPath = [ Path(x) for x in fLstStr ]
@@ -263,75 +192,10 @@ def lookForDiffs( dirsToComp, fLstStr ):
     return differencesExist
 #############################################################################
 
-def buildProjectDict():
-    prjDict = {
-    'spiClock':
-        {'dir' :Path( r'C:\01-home\14-python\gitTrackedCode\spiClock'),
-         'verNumFile':'cmdVectors.py',
-         'active'    :False,
-         'url'       :'https://github.com/sgarrow/spiClock.git'
-        },
-    'sprinkler2':
-        {'dir' :Path( r'C:\01-home\14-python\gitTrackedCode\sprinkler2'),
-         'verNumFile':'cmdVectors.py',
-         'active'    :False,
-         'url'       :'https://github.com/sgarrow/sprinkler2.git'
-        },
-    'shared':
-        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\sharedClientServerCode'),
-         'verNumFile':'fileIO.py',
-         'active'    :False,
-         'url'       :'https://github.com/sgarrow/sharedClientServerCode.git'
-        },
-    'soduko':
-        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\soduko'),
-         'verNumFile':'soduko.py',
-         'active'    :False,
-         'url'       :'https://github.com/sgarrow/soduko.git'
-        },
-    'multiCore':
-        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\multicore'),
-         'verNumFile':'main.py',
-         'active'    :False,
-         'url'       :'https://github.com/sgarrow/multiCore.git'
-        },
-    'clientServer':
-        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\clientServer'),
-         'verNumFile':'server.py',
-         'active'    :False,
-         'url'       :'https://github.com/sgarrow/clientServer.git'
-        },
-    'releaser':
-        {'dir' : Path( r'C:\01-home\14-python\gitTrackedCode\releaser'),
-         'verNumFile':'release.py',
-         'active'    :False,
-         'url'       :'https://github.com/sgarrow/releaser.git'
-        },
-    }
-    return prjDict
-#############################################################################
-def getDsrdPrjDictKey(prjDict):
-
-    print( '\n Which project do you want to release.' )
-    keyLst = list(projDict.keys())
-    for idx,k in enumerate(keyLst):
-        print( '  {} - {}'.format( idx, k ) )
-    
-    while True:
-        choice = input( '  Enter project number (or q (quit)) --> ' )
-        if choice == 'q':
-            return 'quit'
-        try:
-            choiceInt = int(choice)
-        except ValueError:
-            print( '  Must enter an integer' )
-            continue
-        else:
-            if choiceInt not in range(0,len(projDict)):
-                print( '  Invalid choice integer' )
-                continue
-        break
-    return keyLst[choiceInt]
+def exitOnError(errorFlag):
+    if errorFlag:
+        print( ' Exiting, RE: Error.\n' )
+        sys.exit()
 #############################################################################
 
 if __name__ == '__main__':
@@ -346,10 +210,10 @@ if __name__ == '__main__':
     #########################################
 
     ### Build Project Dictionary.
-    projDict = buildProjectDict()
+    projDict = makeSingleDictContainingMetaDataOnAllProjects()
     #########################################
 
-    ### Get Desired Project To Release.
+    ### Get and mark "Active" the project to be release.
     dsrdPrjDictKey = getDsrdPrjDictKey(projDict)
     if dsrdPrjDictKey == 'quit':
         sys.exit()
@@ -357,7 +221,7 @@ if __name__ == '__main__':
 
     ### Set "Working Variables" (from proj dict) and set cwd.
     projDict[dsrdPrjDictKey]['active'] = True
-    projFileWithVerNumInIt = projDict[dsrdPrjDictKey]['verNumFile']
+    projFileWithVerNumInIt = projDict[dsrdPrjDictKey]['verFile']
     projGithubUrl          = projDict[dsrdPrjDictKey]['url']
     projDir                = projDict[dsrdPrjDictKey]['dir']
     os.chdir(projDir)
@@ -366,47 +230,45 @@ if __name__ == '__main__':
     print( ' Current working directory: {}'.format(Path.cwd() ))
     #########################################
 
-    ### Get changed,untracked,etc files of selected project.
+    ### Get changed,untracked,etc files of "Active" project.
     print( '\n Getting changed and untracked files.' )
-    fLstDict = getFileLstDict(projDict)
+    fLstDict = flc.makeFileLstDict(projDict)
     pr.printFileLstDict( fLstDict, prnEn )
     #########################################
 
     ### Exit if problems getting changed/untracked files.
-    errFound, funcRspMsg = lookForErrorsInFileLstDict( fLstDict )
+    errFound, funcRspMsg = flc.lookForErrorsInFileLstDict( fLstDict )
     if errFound:
         print( '{}{}{}'.format( ACC.RED_BOLD, funcRspMsg, ACC.OFF ))
         sys.exit()
     #########################################
 
-    ### Exit, if desired, if unexpected/untracked files present or 
+    ### Exit, if desired, if unexpected/untracked files present or
     ### no tracked/changed files present.
     if fLstDict['unexpectedUntrackedFs']['len'] > 0:
         print( '\n unexpected/untracked files present.')
         print( '   Continuing will not add them.')
         print( '   Add from cmd line like this <git add fName>')
-        goOn = input( '   Continue (y/n)? -> ' )      # <-- EXIT ?
+        goOn = input( '   Continue (y/n)? -> ' )
         if goOn != 'y':
             sys.exit()
 
     if fLstDict['changedTrackedFs']['len'] == 0:
         print( '\n No tracked/changed files present.' )
-        print( '   Continue will bump rev and thus {} will change.'.\
-            format(projFileWithVerNumInIt))
-        goOn = input( '   Continue (y/n)? -> ' )      # <-- EXIT ?
+        goOn = input( '   Continue (y/n)? -> ' )
         if goOn != 'y':
             sys.exit()
     #########################################
 
     ### Look for diffs in shared files if appropriate.
-    thereAreDiffs = False
+    thereAreDiffs = False # pylint: disable=C0103
     if dsrdPrjDictKey in ['spiClock', 'sprinkler2', 'shared']:
         dirsToCmpLst = [
             projDict['shared']['dir'],
             projDict['spiClock']['dir'],
             projDict['sprinkler2']['dir']
         ]
-        thereAreDiffs = lookForDiffs( dirsToCmpLst,
+        thereAreDiffs = lookForDiffs( dirsToCmpLst,  # pylint: disable=C0103
             [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
               'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ])
     #########################################
@@ -414,7 +276,7 @@ if __name__ == '__main__':
     ### Exit, if desired, if diffs in shared files are problematic.
     if thereAreDiffs:
         print( '\n There are diffs in shared files.' )
-        goOn = input( '   Continue (y/n)? -> ' )  # <-- EXIT ?
+        goOn = input( '   Continue (y/n)? -> ' )
         if goOn != 'y':
             sys.exit()
     #########################################
@@ -442,17 +304,17 @@ if __name__ == '__main__':
     #### Exit if there was a problem getting/calculating version numbers.
     if pcntChanged < 0:
         print( ' Exiting, RE: Error.\n' )
-        sys.exit()  # <-- AUTO-EXIT ON ERROR !!
+        sys.exit()
     #########################################
 
     #### Last chance to exit before changing ver num in source and releasing.
     print( '\n About to Update app Ver and Date in {}'.format(projFileWithVerNumInIt) )
-    goOn = input( '   Continue (y/n)? -> ' )      # <-- EXIT ?
+    goOn = input( '   Continue (y/n)? -> ' )
     if goOn != 'y':
         sys.exit()
     #########################################
 
-    #### Write new ver num and date into source, 
+    #### Write new ver num and date into source,
     ###  add file that contains ver num to fLst if appropriate.
     print( '\n Updating app Ver and Date in {}'.format(projFileWithVerNumInIt) )
     fileToChangeVerNumIn = Path( projFileWithVerNumInIt )
@@ -485,9 +347,7 @@ if __name__ == '__main__':
         cmd = cmdBaseLst + [f]
         hasErr, stdO, stdE = rtc.runCommand(cmd)
         pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-        if hasErr:
-            print( ' Exiting, RE: Error.\n' )
-            sys.exit()
+        exitOnError( hasErr )
     #########################################
 
     #### git commit
@@ -495,9 +355,7 @@ if __name__ == '__main__':
     cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-    if hasErr:
-        print( ' Exiting, RE: Error.\n' )
-        sys.exit()
+    exitOnError( hasErr )
     #########################################
 
     #### git set url
@@ -505,9 +363,7 @@ if __name__ == '__main__':
     cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-    if hasErr:
-        print( ' Exiting, RE: Error.\n' )
-        sys.exit()
+    exitOnError( hasErr )
     #########################################
 
     #### git push
@@ -515,9 +371,7 @@ if __name__ == '__main__':
     cmd = ['git', 'push', '-u', 'origin', 'main']
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-    if hasErr:
-        print( ' Exiting, RE: Error.\n' )
-        sys.exit()
+    exitOnError( hasErr )
     #########################################
 
     #### Exit or release?
@@ -536,8 +390,6 @@ if __name__ == '__main__':
     cmd = ['gh', 'release', 'create', newVerStr, '--notes', releaseTxtWithQuotes]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-    if hasErr:
-        print( ' Exiting, RE: Error.\n' )
-        sys.exit()
+    exitOnError( hasErr )
     print()
     #########################################
