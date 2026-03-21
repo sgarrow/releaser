@@ -14,7 +14,7 @@ import asciiColorCodes as ACC
 import compareFiles    as cf
 import getVerNums      as gvn
 
-VER = 'v4.1.3 - 20-Mar-2026'
+VER = 'v4.2.0 - 20-Mar-2026'
 #############################################################################
 
 def makeSingleDictContainingMetaDataOnAllProjects():
@@ -92,28 +92,32 @@ def exitOnError(errorFlag):
         sys.exit()
 #############################################################################
 
+def exitOnNoGoOn(inGoOn):
+    if inGoOn != 'y':
+        sys.exit()
+#############################################################################
+
 if __name__ == '__main__':
 
     print( '\n Releaser verion: {} '.format(VER))
 
-    ### Get Command Line Args.
+    # Get Command Line Args (verbose PRiNt ENable).
     arguments  = sys.argv
     scriptName = arguments[0]
     userArgs   = arguments[1:]
     prnEn      = (len(userArgs) > 0 and '/p' in userArgs)
-    #########################################
 
-    ### Build Project Dictionary.
+    # Make a dict that contains meta data on ALL releaseable projects.
     projDict = makeSingleDictContainingMetaDataOnAllProjects()
-    #########################################
 
-    ### Get and mark "Active" the project to be release.
+    # Prompt user to select (from the "keys" in the projDict)
+    # the name (key) of the project to be released.
     dsrdPrjDictKey = getDsrdPrjDictKey(projDict)
     if dsrdPrjDictKey == 'quit':
         sys.exit()
-    #########################################
 
-    ### Set "Working Variables" (from proj dict) and set cwd.
+    # Set the user selected project as "Active" in projDict, then
+    # set the local "Working Variables" and finally, set the cwd.
     projDict[dsrdPrjDictKey]['active'] = True
     projFileWithVerNumInIt = projDict[dsrdPrjDictKey]['verFile']
     projGithubUrl          = projDict[dsrdPrjDictKey]['url']
@@ -122,39 +126,36 @@ if __name__ == '__main__':
     #pr.printPathInfo(projDir)
     print( '\n Releasing {}\n'.format(projDir) )
     print( ' Current working directory: {}'.format(Path.cwd() ))
-    #########################################
 
-    ### Get changed,untracked,etc files of "Active" project.
+    # Make a dict containing a seperate list for tracked, changed, untracked,
+    # etc, files for the "Active" project.  There are now 2 dicts:
+    # projDict containing meta data for ALL projects and fLstDict containing
+    # lists of various types of files for the "Active" project.
     print( '\n Getting changed and untracked files.' )
     fLstDict = flc.makeFileLstDict(projDict)
     pr.printFileLstDict( fLstDict, prnEn )
-    #########################################
 
-    ### Exit if problems getting changed/untracked files.
+    # Exit if there were problems making fLstDict.
     errFound, funcRspMsg = flc.lookForErrorsInFileLstDict( fLstDict )
     if errFound:
         print( '{}{}{}'.format( ACC.RED_BOLD, funcRspMsg, ACC.OFF ))
         sys.exit()
-    #########################################
 
-    ### Exit, if desired, if unexpected/untracked files present or
-    ### no tracked/changed files present.
+    # Exit, if desired, if there are unexpected-untracked files
+    # present or there are no tracked/changed files present.
     if fLstDict['unexpectedUntrackedFs']['len'] > 0:
         print( '\n unexpected/untracked files present.')
         print( '   Continuing will not add them.')
         print( '   Add from cmd line like this <git add fName>')
         goOn = input( '   Continue (y/n)? -> ' )
-        if goOn != 'y':
-            sys.exit()
+        exitOnNoGoOn(goOn)
 
     if fLstDict['changedTrackedFs']['len'] == 0:
         print( '\n No tracked/changed files present.' )
         goOn = input( '   Continue (y/n)? -> ' )
-        if goOn != 'y':
-            sys.exit()
-    #########################################
+        exitOnNoGoOn(goOn)
 
-    ### Look for diffs in shared files if appropriate.
+    # Look for diffs in shared files if appropriate.
     thereAreDiffs = False # pylint: disable=C0103
     if dsrdPrjDictKey in ['spiClock', 'sprinkler2', 'shared']:
         dirsToCmpLst = [
@@ -165,17 +166,14 @@ if __name__ == '__main__':
         thereAreDiffs= cf.lookForDiffs( dirsToCmpLst, # pylint: disable=C0103
             [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
               'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ])
-    #########################################
 
-    ### Exit, if desired, if diffs in shared files are problematic.
+    # Exit, if desired, if diffs in shared files are problematic.
     if thereAreDiffs:
         print( '\n There are diffs in shared files.' )
         goOn = input( '   Continue (y/n)? -> ' )
-        if goOn != 'y':
-            sys.exit()
-    #########################################
+        exitOnNoGoOn(goOn)
 
-    #### Get current ver num, calc new version, get date.
+    # Get the current ver num, calculate the new ver, and get the date.
     print( '\n Getting curr/new Version Number and Date' )
 
     curVerStr, pcntChanged, newVerStr = \
@@ -193,24 +191,21 @@ if __name__ == '__main__':
         print( '\n   Error getting ver num (file not found).\n')
     if pcntChanged == -3:
         print( '\n   Error getting ver num (search string not found).\n')
-    #########################################
 
-    #### Exit if there was a problem getting/calculating version numbers.
+    # Exit if there was a problem getting/calculating version numbers.
     if pcntChanged < 0:
         print( ' Exiting, RE: Error.\n' )
         sys.exit()
-    #########################################
 
-    #### Last chance to exit before changing ver num in source and releasing.
-    print( '\n About to Update app Ver and Date in {}'.format(projFileWithVerNumInIt) )
+    # Last chance to exit before changing ver num in source and releasing.
+    print( '\n About to Update app Ver and Date in {}'.\
+        format(projFileWithVerNumInIt) )
     goOn = input( '   Continue (y/n)? -> ' )
-    if goOn != 'y':
-        sys.exit()
-    #########################################
+    exitOnNoGoOn(goOn)
 
-    #### Write new ver num and date into source,
-    ###  add file that contains ver num to fLst if appropriate.
-    print( '\n Updating app Ver and Date in {}'.format(projFileWithVerNumInIt) )
+    # Write new ver num and date into source, add file
+    # that contains ver num to fLstDict if appropriate.
+    print( '\n Updating app Ver and Date in {}'.format(projFileWithVerNumInIt))
     fileToChangeVerNumIn = Path( projFileWithVerNumInIt )
     text = fileToChangeVerNumIn.read_text(encoding='utf-8')
     new_text=re.sub(r"VER = .*", f"VER = '{newVerStr} - {date}'",text,count=1) # pylint: disable=W1405
@@ -222,19 +217,16 @@ if __name__ == '__main__':
 
         fLstDict['changedTrackedFs']['len'] = \
             fLstDict['changedTrackedFs']['len'] + 1
-    #########################################
 
     #@rem only needed on first push
     #@rem git branch -M main
     #@rem git remote add origin https://github.com/sgarrow/spiClock.git
-    #########################################
 
-    #### Get commit message.
+    # Get commit message.
     commitTxt = input( '\n Enter GIT commit message -> ' )
     commitTxtWithQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
-    #########################################
 
-    #### git add
+    # git add.
     print( '\n GIT Adding appropriate files.' )
     cmdBaseLst = [ 'git', 'add' ]
     for f in fLstDict['changedTrackedFs']['fLst']:
@@ -242,41 +234,34 @@ if __name__ == '__main__':
         hasErr, stdO, stdE = rtc.runCommand(cmd)
         pr.printStdOutOrStdErr( hasErr, stdO, stdE )
         exitOnError( hasErr )
-    #########################################
 
-    #### git commit
+    # git commit.
     print( '\n GIT Committing.' )
     cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     exitOnError( hasErr )
-    #########################################
 
-    #### git set url
+    # git set url.
     print( '\n GIT Setting GitHub URL.' )
     cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     exitOnError( hasErr )
-    #########################################
 
-    #### git push
+    # git push.
     print( ' GIT Pushing to GitHub.' )
     cmd = ['git', 'push', '-u', 'origin', 'main']
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     exitOnError( hasErr )
-    #########################################
 
-    #### Exit or release?
+    # Exit or release?
     print( '\n Successfully pushed {} to GitHub.'.format(newVerStr) )
     goOn = input( '   Do you want to "Release" it (y/n)? -> ' )  # <-- EXIT ?
-    if goOn != 'y':
-        print()
-        sys.exit()
-    #########################################
+    exitOnNoGoOn(goOn)
 
-    #### Release.
+    # Release.
     releaseTxt = input( '\n   Enter release message -> ' )
     releaseTxtWithQuotes = r'"{}."'.format( releaseTxt )
 
@@ -285,5 +270,5 @@ if __name__ == '__main__':
     hasErr, stdO, stdE = rtc.runCommand(cmd)
     pr.printStdOutOrStdErr( hasErr, stdO, stdE )
     exitOnError( hasErr )
+    print( '\n Successfully released {} on GitHub.'.format(newVerStr) )
     print()
-    #########################################

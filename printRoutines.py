@@ -18,7 +18,6 @@ def printPathInfo(inPathInfo):
     print()
 #############################################################################
 
-
 def printFileLstDict(inFileListDict, pEn):
     #pp.pprint(inFileListDict)
     printOrder = [

@@ -7,7 +7,11 @@ def getVerNums( fName, numChangedPy, numTrackedPy ):
     newVStrwV = None
 
     try:
-        pcntChange = int((numChangedPy/numTrackedPy) * 100.0)
+        pcntChange = int(
+                          round(
+                                 (( numChangedPy/numTrackedPy) * 100.0)
+                               )
+                        )
     except ZeroDivisionError:
         return curVStr, -1, newVStrwV
 
