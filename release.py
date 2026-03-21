@@ -1,4 +1,3 @@
-from itertools import combinations
 from pathlib   import Path
 
 import datetime as dt
@@ -12,8 +11,9 @@ import fileLstCreator  as flc
 import runTerminalCmd  as rtc
 import printRoutines   as pr
 import asciiColorCodes as ACC
+import compareFiles    as cf
 
-VER = 'v4.1.1 - 19-Mar-2026'
+VER = 'v4.1.2 - 20-Mar-2026'
 #############################################################################
 
 def makeSingleDictContainingMetaDataOnAllProjects():
@@ -144,54 +144,6 @@ def getVerNums( fName, numChangedPy, numTrackedPy ):
     return curVStr, pcntChange, newVStrwV
 #############################################################################
 
-def lookForDiffs( dirsToComp, fLstStr ):
-
-    print( '\n Looking for diffs among shared files.\n' )
-
-    differencesExist = False
-    fLstPath = [ Path(x) for x in fLstStr ]
-    combSet  = combinations(dirsToComp, 2)
-    width    = 37
-    slash    = '\\'
-
-    for comb in combSet:
-
-        combAsStr0   = str(comb[0])
-        combAsStr1   = str(comb[1])
-
-        slashIndeces0= [idx for idx,ch in enumerate(combAsStr0) if ch==slash]
-        slashIndeces1= [idx for idx,ch in enumerate(combAsStr1) if ch==slash]
-
-        comb0Root    = combAsStr0[ slashIndeces0[-1]: ]
-        comb1Root    = combAsStr1[ slashIndeces1[-1]: ]
-
-        for file in fLstPath:
-
-            f0 =  comb[0] / file  # A Path join. All 3 vars type Path.
-            f1 =  comb[1] / file  # A Path join. All 3 vars type Path.
-
-            text0 = f0.read_text( encoding='utf-8' )
-            text1 = f1.read_text( encoding='utf-8' )
-            equal = text0 == text1
-
-            pStr0 = '   {}\\{}{}'.format( comb0Root, file,
-                        (width-len(comb0Root)-len(str(file))) * ' ' )
-
-            pStr1 = '   {}\\{}'.format(   comb1Root, file )
-
-            print(pStr0, end ='')
-            if equal:
-                print( '==',end = '' )
-            else:
-                print( '!=', end = '' )
-                differencesExist = True
-            print(pStr1, end ='')
-
-            print()
-        print('  ##########')
-    return differencesExist
-#############################################################################
-
 def exitOnError(errorFlag):
     if errorFlag:
         print( ' Exiting, RE: Error.\n' )
@@ -268,7 +220,7 @@ if __name__ == '__main__':
             projDict['spiClock']['dir'],
             projDict['sprinkler2']['dir']
         ]
-        thereAreDiffs = lookForDiffs( dirsToCmpLst,  # pylint: disable=C0103
+        thereAreDiffs= cf.lookForDiffs( dirsToCmpLst, # pylint: disable=C0103
             [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
               'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ])
     #########################################
