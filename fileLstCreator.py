@@ -6,8 +6,11 @@ def getAllTrackedFs():
     cmdLst = [ 'git', 'ls-files' ]
     #cmdLst = [ 'git', 'ls-file' ] # shg
     err, stdOut,stdErr = rtc.runCommand(cmdLst)
+    #stdOut = ''
     if not err:
-        stdOutLines = stdOut.split('\n')
+        # Use line below instead to catch edge case where stdOut = ''
+        #stdOutLines = stdOut.split('\n')
+        stdOutLines = [line for line in stdOut.strip().split('\n') if line]
         allTrackedFiles = [line.split()[0] for line in stdOutLines]
     return err, stdOut, stdErr, allTrackedFiles
 #############################################################################
@@ -17,8 +20,9 @@ def getChangedTrackedFs():
     cmdLst = [ 'git', 'status', '--porcelain' ]
     #cmdLst = [ 'gi', 'status', '--porcelain' ] # shg
     err, stdOut,stdErr = rtc.runCommand(cmdLst)
+    #stdOut = ''
     if not err:
-        stdOutLines = stdOut.split('\n')
+        stdOutLines = [line for line in stdOut.strip().split('\n') if line]
         changedTrackedFiles = \
             [line.split()[1] for line in stdOutLines if line.split()[0]=='M']
     return err, stdOut, stdErr, changedTrackedFiles
@@ -28,8 +32,9 @@ def getUntrackedFs():
     untrackedFiles = []
     cmdLst = [ 'git', 'status', '--porcelain' ]
     err, stdOut,stdErr = rtc.runCommand(cmdLst)
+    #stdOut = ''
     if not err:
-        stdOutLines = stdOut.split('\n')
+        stdOutLines = [line for line in stdOut.strip().split('\n') if line]
         untrackedFiles = \
             [line.split()[1] for line in stdOutLines if line.split()[0]=='??']
     return err, stdOut, stdErr, untrackedFiles
@@ -38,25 +43,17 @@ def getUntrackedFs():
 def getExpectedUntrackedFs(projectsDict):
     err, stdOut, stdErr = True, '', ' Active Project not Found.'
 
-    kk = ''
     for kk,v in projectsDict.items():
         if v['active']:
             err = False
             stdErr = ''
             break
 
-    if kk == 'spiClock':
+    expectedUntrackedFiles = []
+    if kk in ['spiClock','sprinkler2']:
         expectedUntrackedFiles   = \
             [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
               'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ]
-    elif kk == 'sprinkler2':
-        expectedUntrackedFiles   = \
-            [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
-              'fileIO.py', 'server.py', 'swUpdate.py', 'utils.py' ]
-    elif kk == 'shared':
-        expectedUntrackedFiles = []
-    else:
-        expectedUntrackedFiles = []
 
     return err, stdOut, stdErr, expectedUntrackedFiles
 #############################################################################

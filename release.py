@@ -14,7 +14,7 @@ import asciiColorCodes as ACC
 import compareFiles    as cf
 import getVerNums      as gvn
 
-VER = 'v4.2.0 - 20-Mar-2026'
+VER = 'v4.2.1 - 21-Mar-2026'
 #############################################################################
 
 def makeSingleDictContainingMetaDataOnAllProjects():
