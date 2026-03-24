@@ -7,7 +7,7 @@ RED_CODE       = '{}'.format( '[31' )
 WHITE_CODE     = '{}'.format( '[37' )
 BOLD_ON_CODE   = '{}'.format( '1'    )
 
-# Things that can be put in print strings.  
+# Things that can be put in print strings.
 # e.g., print('{}{}{}'.format(RED,'hello',OFF)) # print hello in red.
 RED            = '{}{}m'.format(    ESC_CODE, RED_CODE                 )
 RED_BOLD       = '{}{};{}m'.format( ESC_CODE, RED_CODE,   BOLD_ON_CODE )

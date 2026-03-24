@@ -14,7 +14,7 @@ import asciiColorCodes as ACC
 import compareFiles    as cf
 import getVerNums      as gvn
 
-VER = 'v4.2.2 - 21-Mar-2026'
+VER = 'v4.4.0 - 23-Mar-2026'
 #############################################################################
 
 def makeSingleDictContainingMetaDataOnAllProjects():
@@ -66,8 +66,8 @@ def getDsrdPrjDictKey(prjDict):
 
     print( '\n Which project do you want to release.' )
     keyLst = list(prjDict.keys())
-    for idx,k in enumerate(keyLst):
-        print( '  {} - {}'.format( idx, k ) )
+    for idx,ky in enumerate(keyLst):
+        print( '  {} - {}'.format( idx, ky ) )
 
     while True:
         choice = input( '  Enter project number (or q (quit)) --> ' )
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     fileToChangeVerNumIn = Path( projFileWithVerNumInIt )
     text = fileToChangeVerNumIn.read_text(encoding='utf-8')
     new_text=re.sub(r"VER = .*", f"VER = '{newVerStr} - {date}'",text,count=1) # pylint: disable=W1405
-    #fileToChangeVerNumIn.write_text(new_text, encoding='utf-8')
+    fileToChangeVerNumIn.write_text(new_text, encoding='utf-8')
 
     if projFileWithVerNumInIt not in fLstDict['changedTrackedFs']['fLst']:
         print( '   Adding {} to changedTrackedFs'.format(projFileWithVerNumInIt))
@@ -227,19 +227,15 @@ if __name__ == '__main__':
     cmtTxtQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
 
     gitCmdDict = {
-        0 : { 'msg'   : '\n GIT Adding appropriate files.',
-              'cmdLst': [ ['git', 'add', f] \
-                          for f in fLstDict['changedTrackedFs']['fLst'] ]
-            },
-        1 : { 'msg'   : '\n GIT Committing.',
-              'cmdLst': [['git', 'commit', '--no-verify', '-m', cmtTxtQuotes]]
-            },
-        2 : { 'msg'   : '\n GIT Setting GitHub URL.',
-              'cmdLst': [['git', 'remote', 'set-url', 'origin', projGithubUrl]]
-            },
-        3 : { 'msg'   : ' GIT Pushing to GitHub.',
-              'cmdLst': [['git', 'push', '-u', 'origin', 'main']]
-            }
+        0: { 'msg'   : '\n GIT Adding appropriate files.',
+             'cmdLst': [ ['git', 'add', f] \
+                         for f in fLstDict['changedTrackedFs']['fLst'] ]     },
+        1: { 'msg'   : '\n GIT Committing.',
+             'cmdLst': [['git', 'commit', '--no-verify', '-m',cmtTxtQuotes]] },
+        2: { 'msg'   : '\n GIT Setting GitHub URL.',
+             'cmdLst': [['git', 'remote', 'set-url', 'origin',projGithubUrl]]},
+        3: { 'msg'   : ' GIT Pushing to GitHub.',
+             'cmdLst': [['git', 'push', '-u', 'origin', 'main']]             }
     }
     for k in range(len(gitCmdDict)):
         print(gitCmdDict[k]['msg'])

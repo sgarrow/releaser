@@ -41,7 +41,10 @@ def getUntrackedFs():
 #############################################################################
 
 def getExpectedUntrackedFs(projectsDict):
+
     err, stdOut, stdErr = True, '', ' Active Project not Found.'
+    expectedUntrackedFiles = []
+    kk = ''
 
     for kk,v in projectsDict.items():
         if v['active']:
@@ -49,7 +52,6 @@ def getExpectedUntrackedFs(projectsDict):
             stdErr = ''
             break
 
-    expectedUntrackedFiles = []
     if kk in ['spiClock','sprinkler2']:
         expectedUntrackedFiles   = \
             [ 'cfg.cfg',   'cfg.py',    'client.py',   'gui.py',
