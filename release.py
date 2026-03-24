@@ -209,7 +209,7 @@ if __name__ == '__main__':
     fileToChangeVerNumIn = Path( projFileWithVerNumInIt )
     text = fileToChangeVerNumIn.read_text(encoding='utf-8')
     new_text=re.sub(r"VER = .*", f"VER = '{newVerStr} - {date}'",text,count=1) # pylint: disable=W1405
-    fileToChangeVerNumIn.write_text(new_text, encoding='utf-8')
+    #fileToChangeVerNumIn.write_text(new_text, encoding='utf-8')
 
     if projFileWithVerNumInIt not in fLstDict['changedTrackedFs']['fLst']:
         print( '   Adding {} to changedTrackedFs'.format(projFileWithVerNumInIt))
@@ -224,37 +224,29 @@ if __name__ == '__main__':
 
     # Get commit message.
     commitTxt = input( '\n Enter GIT commit message -> ' )
-    commitTxtWithQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
+    cmtTxtQuotes = r'"{}. {}"'.format( newVerStr, commitTxt )
 
-    # git add.
-    print( '\n GIT Adding appropriate files.' )
-    cmdBaseLst = [ 'git', 'add' ]
-    for f in fLstDict['changedTrackedFs']['fLst']:
-        cmd = cmdBaseLst + [f]
-        hasErr, stdO, stdE = rtc.runCommand(cmd)
-        pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-        exitOnError( hasErr )
-
-    # git commit.
-    print( '\n GIT Committing.' )
-    cmd = [ 'git', 'commit', '--no-verify', '-m', commitTxtWithQuotes  ]
-    hasErr, stdO, stdE = rtc.runCommand(cmd)
-    pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-    exitOnError( hasErr )
-
-    # git set url.
-    print( '\n GIT Setting GitHub URL.' )
-    cmd = [ 'git', 'remote', 'set-url', 'origin', projGithubUrl ]
-    hasErr, stdO, stdE = rtc.runCommand(cmd)
-    pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-    exitOnError( hasErr )
-
-    # git push.
-    print( ' GIT Pushing to GitHub.' )
-    cmd = ['git', 'push', '-u', 'origin', 'main']
-    hasErr, stdO, stdE = rtc.runCommand(cmd)
-    pr.printStdOutOrStdErr( hasErr, stdO, stdE )
-    exitOnError( hasErr )
+    gitCmdDict = {
+        0 : { 'msg'   : '\n GIT Adding appropriate files.',
+              'cmdLst': [ ['git', 'add', f] \
+                          for f in fLstDict['changedTrackedFs']['fLst'] ]
+            },
+        1 : { 'msg'   : '\n GIT Committing.',
+              'cmdLst': [['git', 'commit', '--no-verify', '-m', cmtTxtQuotes]]
+            },
+        2 : { 'msg'   : '\n GIT Setting GitHub URL.',
+              'cmdLst': [['git', 'remote', 'set-url', 'origin', projGithubUrl]]
+            },
+        3 : { 'msg'   : ' GIT Pushing to GitHub.',
+              'cmdLst': [['git', 'push', '-u', 'origin', 'main']]
+            }
+    }
+    for k in range(len(gitCmdDict)):
+        print(gitCmdDict[k]['msg'])
+        for cmd in gitCmdDict[k]['cmdLst']:
+            hasErr, stdO, stdE = rtc.runCommand(cmd)
+            pr.printStdOutOrStdErr( hasErr, stdO, stdE )
+            exitOnError( hasErr )
 
     # Exit or release?
     print( '\n Successfully pushed {} to GitHub.'.format(newVerStr) )
